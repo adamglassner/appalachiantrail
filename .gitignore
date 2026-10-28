@@ -1,0 +1,12 @@
+# Godot
+.godot/
+installer/.godot/
+*.tmp
+
+# Build output (see tools/build_release.sh)
+build/
+installer/payload/*
+!installer/payload/.gitkeep
+
+# Python
+__pycache__/

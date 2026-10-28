@@ -1,0 +1,29 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="The Appalachian Trail Setup"
+config/description="Installer for The Appalachian Trail, an Ironite game."
+config/version="1.3.0"
+run/main_scene="res://setup.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://assets/icon.png"
+config/windows_native_icon="res://assets/setup.ico"
+boot_splash/bg_color=Color(0.07, 0.095, 0.09, 1)
+boot_splash/show_image=false
+config/use_custom_user_dir=true
+config/custom_user_dir_name="AppalachianTrailSetup"
+
+[display]
+
+window/size/viewport_width=860
+window/size/viewport_height=540
+window/size/resizable=false
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
