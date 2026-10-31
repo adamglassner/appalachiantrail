@@ -262,7 +262,10 @@ def main():
         sys.exit(f"new resources ({len(blob)} bytes) do not fit in .rsrc ({sec['rs']} bytes); use a smaller icon")
     d = pe.d
     d[sec["ro"]:sec["ro"] + sec["rs"]] = blob + b"\0" * (sec["rs"] - len(blob))
-    struct.pack_into("<I", d, sec["hdr"] + 8, len(blob))           # VirtualSize
+    # Keep the section's VirtualSize at least as big as before: Windows only loads
+    # an .exe whose sections follow each other with no gaps in memory, so
+    # shrinking .rsrc here makes it "not a valid Win32 application".
+    struct.pack_into("<I", d, sec["hdr"] + 8, max(sec["vs"], len(blob)))  # VirtualSize
     struct.pack_into("<I", d, pe.dd + 2 * 8 + 4, len(blob))          # resource directory size
     struct.pack_into("<I", d, pe.opt + 64, 0)                        # clear checksum
     open(a.out, "wb").write(d)

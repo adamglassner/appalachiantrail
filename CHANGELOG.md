@@ -2,6 +2,11 @@
 
 All notable changes to The Appalachian Trail, an Ironite game.
 
+## v1.3.1 — October 31, 2026
+
+### Fixed
+- The game and its installer wouldn't start on Windows ("not a valid Win32 application"). Adding the icon and version details to the .exe left a gap inside the program file that Windows refuses to load; that's fixed.
+
 ## v1.3.0 — October 20, 2026
 
 ### Added

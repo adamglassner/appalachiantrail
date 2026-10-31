@@ -5,7 +5,7 @@ config_version=5
 
 config/name="The Appalachian Trail Setup"
 config/description="Installer for The Appalachian Trail, an Ironite game."
-config/version="1.3.0"
+config/version="1.3.1"
 run/main_scene="res://setup.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://assets/icon.png"
