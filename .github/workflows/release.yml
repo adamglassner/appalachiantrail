@@ -1,0 +1,85 @@
+# Builds The Appalachian Trail for Windows with tools/build_release.sh and
+# publishes it as a GitHub Release with the setup program and the portable zip.
+# Ironite Launcher installs and updates the game from the latest release's
+# AppalachianTrail-<version>-Windows-Portable.zip.
+#
+# To release: bump config/version in project.godot (and the two version fields in
+# export_presets.cfg), add a section at the top of CHANGELOG.md, then push to main.
+# If that version has no release yet, this builds it and publishes v<version>
+# (creating the tag). Pushes that don't change the version do nothing.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  GODOT_TAG: "4.3-stable"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Is this version already released?
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(grep -m1 -oP '^config/version="\K[^"]+' project.godot)
+          [ -n "$VERSION" ] || { echo "::error::Could not read config/version"; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$VERSION is already released - nothing to do."; echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Releasing v$VERSION"; echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Godot and export templates
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/godot" && cd "$RUNNER_TEMP/godot"
+          gh release download "$GODOT_TAG" --repo godotengine/godot-builds \
+            -p "Godot_v${GODOT_TAG}_linux.x86_64.zip" -p "Godot_v${GODOT_TAG}_export_templates.tpz"
+          unzip -q "Godot_v${GODOT_TAG}_linux.x86_64.zip"
+          mv "Godot_v${GODOT_TAG}_linux.x86_64" godot && chmod +x godot
+          TPL="$HOME/.local/share/godot/export_templates/${GODOT_TAG/-/.}"
+          mkdir -p "$TPL"
+          unzip -q "Godot_v${GODOT_TAG}_export_templates.tpz" -d tpl
+          mv tpl/templates/* "$TPL/"
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+
+      - name: Build
+        if: steps.check.outputs.skip != 'true'
+        run: GODOT=godot timeout 1800 bash tools/build_release.sh
+
+      - name: Release notes
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          awk 'BEGIN{n=0} /^## /{n++; if(n==2) exit} n==1 && !/^## /' CHANGELOG.md > notes.md
+          printf '\n---\nInstall and update this game with **Ironite Launcher** (https://github.com/adamglassner/launcher), run the setup program, or unzip the portable zip and run AppalachianTrail.exe.\n' >> notes.md
+
+      - uses: softprops/action-gh-release@v2
+        if: steps.check.outputs.skip != 'true'
+        with:
+          tag_name: v${{ steps.check.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: The Appalachian Trail ${{ steps.check.outputs.version }}
+          body_path: notes.md
+          files: |
+            build/AppalachianTrail-Setup-${{ steps.check.outputs.version }}.exe
+            build/AppalachianTrail-${{ steps.check.outputs.version }}-Windows-Portable.zip
+          make_latest: true
